@@ -11,7 +11,7 @@ root.resizable(False,False)
 def SignIn():
     username=user.get()
     password=pasw.get()
-    file="D:\\Kuliah UNEJ\\Semester 2\\Algo 2\\database.txt"
+    file="database.txt"
     opn = open(file)
     List =  opn.readlines()
     Data = []
