@@ -1,43 +1,80 @@
 from datetime import datetime
 import csv
-import pandas as pd
 import os
+import tabulate
 
-list_task = []
+jadwal_list = []
 
 
-def task_priority():
+def tampilkan_jadwal():
     filename = "jadwal.csv"
 
-    # Membaca data jadwal dari file CSV
+    if not os.path.getsize(filename):
+        print("Maaf, file jadwal kosong. Anda belum menginputkan jadwal.")
+        return
+
     with open(filename, 'r') as csvfile:
         reader = csv.DictReader(csvfile)
         rows = list(reader)
 
-    if not rows:
-        print("Jadwal kosong.")
-        return
+    print("Jadwal saat ini:")
+    create_table(rows)
 
-    print("Pilihan sorting:")
-    print("1. Deadline terdekat")
-    print("2. Abjad nama task")
-    print("3. Tingkat urgensi")
 
-    pilihan = input("Masukkan pilihan sorting (1/2/3): ")
+def tambah_jadwal():
+    filename = "jadwal.csv"
 
-    if pilihan == '1':
-        sorted_rows = sorted(rows, key=lambda row: datetime.strptime(
-            row['Deadline'], "%Y-%m-%d").date())
-    elif pilihan == '2':
-        sorted_rows = sorted(rows, key=lambda row: row['Nama Task'])
-    elif pilihan == '3':
-        sorted_rows = sorted(
-            rows, key=lambda row: float(row['Tingkat Urgensi']))
-    else:
-        print("Pilihan tidak valid.")
-        return
+    file_exists = os.path.isfile(filename)
 
-    print("Jadwal yang diurutkan:")
+    nama_task = input("Nama Task\t\t   : ")
+    kategori_task = input("Kategori Task\t\t   : ")
+    urgensi_task = float(input("Urgensi Task\t\t   : "))
+
+    # Memasukkan format tanggal dibuat
+    tanggal_dibuat = input("Tanggal dibuat (DD/MM/YYYY): ")
+    tanggal_dibuat = datetime.strptime(tanggal_dibuat, "%d/%m/%Y").date()
+
+    # Memasukkan format deadline task
+    deadline_task = input("Deadline Task (DD/MM/YYYY): ")
+    deadline_task = datetime.strptime(deadline_task, "%d/%m/%Y").date()
+
+    lokasi = input('Lokasi Task: ')
+    # Menghitung estimasi deadline
+    estimasi_deadline = (deadline_task - tanggal_dibuat).days
+
+    rasio = urgensi_task / estimasi_deadline
+
+    task_dict = {'Nama Task': nama_task,
+                 'Kategori': kategori_task,
+                 'Tingkat Urgensi': urgensi_task,
+                 'Tanggal Dibuat': tanggal_dibuat,
+                 'Deadline': deadline_task,
+                 'Lokasi': lokasi,
+                 'Estimasi Deadline': estimasi_deadline,
+                 'Rasio': rasio}
+
+    jadwal_list.append(task_dict)  # Menambahkan task ke dalam list
+
+    fieldnames = ['Nama Task', 'Kategori', 'Tingkat Urgensi', 'Tanggal Dibuat',
+                  'Deadline', 'Lokasi', 'Estimasi Deadline', 'Rasio']
+
+    if not file_exists:
+        with open(filename, 'w', newline='') as header:
+            writer = csv.writer(header)
+            writer.writerow(fieldnames)
+
+    with open(filename, 'a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writerows(jadwal_list)
+
+    print("Jadwal berhasil ditambahkan.")
+
+
+def create_table(sorted_rows):
+    print('\n')
+    print("Nama Task       : ", "Kategori        : ", "Tingkat Urgensi   : ", "Tanggal Dibuat  : ",
+          "Deadline        : ", "Lokasi          : ", "Estimasi Deadline : ", "Rasio            ")
+    print("=" * 160)
 
     for row in sorted_rows:
         nama_task = row['Nama Task']
@@ -50,84 +87,93 @@ def task_priority():
         lokasi = row['Lokasi']
         estimasi_deadline = row['Estimasi Deadline']
         rasio = row['Rasio']
+        print("{:<15} : {:<16} : {:<18} : {:<16} : {:<16} : {:<16} : {:<18} : {:<15}".format(
+            nama_task, kategori, urgensi, tanggal_dibuat, deadline, lokasi, estimasi_deadline, rasio))
 
-        print("Nama Task       : ", nama_task)
-        print("Kategori        : ", kategori)
-        print("Tingkat Urgensi : ", urgensi)
-        print("Tanggal Dibuat  : ", tanggal_dibuat)
-        print("Deadline        : ", deadline)
-        print("Lokasi          : ", lokasi)
-        print("Estimasi Deadline : ", estimasi_deadline)
-        print("Rasio           : ", rasio)
-        print("-----------------------------")
+    print("=" * 160)
 
-def tambah_jadwal():
-    fields = ['Nama Task', 'Kategori', 'Tingkat Urgensi', 'Tanggal Dibuat',
-              'Deadline', 'Lokasi', 'Estimasi Deadline', 'Rasio']
+
+def merge_sort(arr, key=lambda x: x, reverse=False):
+    if len(arr) <= 1:
+        return arr
+
+    mid = len(arr) // 2
+    left = merge_sort(arr[:mid], key=key, reverse=reverse)
+    right = merge_sort(arr[mid:], key=key, reverse=reverse)
+
+    return merge(left, right, key=key, reverse=reverse)
+
+
+def merge(left, right, key=lambda x: x, reverse=False):
+    result = []
+    i = j = 0
+
+    while i < len(left) and j < len(right):
+        if key(left[i]) <= key(right[j]):
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+
+    while i < len(left):
+        result.append(left[i])
+        i += 1
+
+    while j < len(right):
+        result.append(right[j])
+        j += 1
+
+    if reverse:
+        result.reverse()
+
+    return result
+
+
+def task_priority():
     filename = "jadwal.csv"
-
-    jumlah_task = int(input("Jumlah Task\t\t   : "))
-    jadwal_list = []  # Membuat list kosong untuk menyimpan semua task
-
-    file_exists = os.path.isfile(filename)
-
-    for i in range(jumlah_task):
-        print("\nTask ke-", i+1)
-        nama_task = input("Nama Task\t\t   : ")
-        kategori_task = input("Kategori Task\t\t   : ")
-        urgensi_task = float(input("Urgensi Task\t\t   : "))
-
-        # Memasukkan format tanggal dibuat
-        tanggal_dibuat = input("Tanggal dibuat (DD/MM/YYYY): ")
-        tanggal_dibuat = datetime.strptime(tanggal_dibuat, "%d/%m/%Y").date()
-
-        # Memasukkan format deadline task
-        deadline_task = input("Deadline Task (DD/MM/YYYY): ")
-        deadline_task = datetime.strptime(deadline_task, "%d/%m/%Y").date()
-
-        lokasi = input('Lokasi Task: ')
-        # Menghitung estimasi deadline
-        estimasi_deadline = (deadline_task - tanggal_dibuat).days
-
-        rasio = urgensi_task / estimasi_deadline
-
-        task_dict = {'Nama Task': nama_task,
-                     'Kategori': kategori_task,
-                     'Tingkat Urgensi': urgensi_task,
-                     'Tanggal Dibuat': tanggal_dibuat,
-                     'Deadline': deadline_task,
-                     'Lokasi': lokasi,
-                     'Estimasi Deadline': estimasi_deadline,
-                     'Rasio': rasio}
-
-        jadwal_list.append(task_dict)  # Menambahkan task ke dalam list
-
-    with open(filename, 'a', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fields)
-
-        if not file_exists:
-            writer.writeheader()  # Menulis header jika file baru
-
-        writer.writerows(jadwal_list)
-
-    print("Jadwal berhasil ditambahkan.")
-
-
-def tampilkan_jadwal():
-    filename = "jadwal.csv"
-
+    # Membaca data jadwal dari file CSV
     with open(filename, 'r') as csvfile:
         reader = csv.DictReader(csvfile)
-        for row in reader:
-            print("Nama Task:", row['Nama Task'])
-            print("Kategori:", row['Kategori'])
-            print("Tingkat Urgensi:", row['Tingkat Urgensi'])
-            print("Tanggal Dibuat:", row['Tanggal Dibuat'])
-            print("Deadline:", row['Deadline'])
-            print("Lokasi:", row['Lokasi'])
-            print("Estimasi Deadline:", row['Estimasi Deadline'])
-            print("Rasio:", row['Rasio'])
-            print("-" * 30)
+        rows = list(reader)
+
+    if not rows:
+        print("Jadwal kosong.")
+        return
+    print('\n')
+    print("Pilihan sorting:")
+    print("1. Deadline terdekat")
+    print("2. Deadline terpanjang")
+    print("3. A - Z nama task")
+    print("4. Z - A nama task")
+    print("5. Tingkat urgensi terkecil")
+    print("6. Tingkat urgensi terbesar")
+
+    pilihan = input("Masukkan pilihan sorting (1/2/3/4/5/6): ")
+
+    if pilihan == '1':
+        sorted_rows = merge_sort(rows, key=lambda row: datetime.strptime(
+            row['Deadline'], "%Y-%m-%d").date())
+    elif pilihan == '2':
+        sorted_rows = merge_sort(rows, key=lambda row: datetime.strptime(
+            row['Deadline'], "%Y-%m-%d").date(), reverse=True)
+    elif pilihan == '3':
+        sorted_rows = merge_sort(rows, key=lambda row: row['Nama Task'])
+    elif pilihan == '4':
+        sorted_rows = merge_sort(
+            rows, key=lambda row: row['Nama Task'], reverse=True)
+    elif pilihan == '5':
+        sorted_rows = merge_sort(
+            rows, key=lambda row: float(row['Tingkat Urgensi']))
+    elif pilihan == '6':
+        sorted_rows = merge_sort(rows, key=lambda row: float(
+            row['Tingkat Urgensi']), reverse=True)
+    else:
+        print("Pilihan tidak valid.")
+        return
+
+    print("Jadwal yang diurutkan:")
+    create_table(sorted_rows)
 
 
 def hapus_jadwal(nomor_baris):
@@ -165,15 +211,7 @@ def edit_jadwal(nomor_baris):
     row = rows[nomor_baris - 1]
 
     print("Jadwal sebelum diubah:")
-    print("Nomor Baris:", nomor_baris)
-    print("Nama Task:", row['Nama Task'])
-    print("Kategori:", row['Kategori'])
-    print("Tingkat Urgensi:", row['Tingkat Urgensi'])
-    print("Tanggal Dibuat:", row['Tanggal Dibuat'])
-    print("Deadline:", row['Deadline'])
-    print("Lokasi:", row['Lokasi'])
-    print("Estimasi Deadline:", row['Estimasi Deadline'])
-    print("Rasio:", row['Rasio'])
+    create_table([row])
 
     konfirmasi = input("Apakah Anda ingin mengubah jadwal ini? (y/n): ")
     if konfirmasi.lower() != 'y':
@@ -207,19 +245,80 @@ def edit_jadwal(nomor_baris):
     }
 
     with open(filename, 'w', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=reader.fieldnames)
+        fieldnames = ['Nama Task', 'Kategori', 'Tingkat Urgensi',
+                      'Tanggal Dibuat', 'Deadline', 'Lokasi', 'Estimasi Deadline', 'Rasio']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
 
-    konf_berhasil = input("Jadwal berhasil diubah. klik enter untuk kembali")
+    print("Jadwal berhasil diubah.")
+
+    konf_berhasil = input("Klik enter untuk kembali")
     if konf_berhasil.isprintable():
         os.system("cls")
         main()
 
 
+def binary_search(sorted_rows, key, target):
+    left = 0
+    right = len(sorted_rows) - 1
+
+    while left <= right:
+        mid = (left + right) // 2
+        if sorted_rows[mid][key] == target:
+            return sorted_rows[mid]
+        elif sorted_rows[mid][key] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return None
+
+
+def searching():
+    filename = "jadwal.csv"
+    with open(filename, 'r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        rows = list(reader)
+
+    if not rows:
+        print("Jadwal kosong.")
+        return
+
+    sorted_rows = merge_sort(rows, key=lambda row: row['Nama Task'])
+    key = 'Nama Task'
+    pencarian = input("Masukkan nilai pencarian: ")
+
+    result = binary_search(sorted_rows, key, pencarian)
+
+    if result:
+        print("Data ditemukan:")
+        table = [[
+            result['Nama Task'],
+            result['Kategori'],
+            result['Tingkat Urgensi'],
+            result['Tanggal Dibuat'],
+            result['Deadline'],
+            result['Lokasi'],
+            result['Estimasi Deadline'],
+            result['Rasio']
+        ]]
+        headers = [
+            'Nama Task',
+            'Kategori',
+            'Tingkat Urgensi',
+            'Tanggal Dibuat',
+            'Deadline',
+            'Lokasi',
+            'Estimasi Deadline',
+            'Rasio'
+        ]
+        print(tabulate.tabulate(table, headers=headers, tablefmt="grid"))
+    else:
+        print("Data tidak ditemukan.")
+
+
 def main():
     print("=== Aplikasi Jadwal ===")
-    tampilkan_jadwal()
     while True:
         print("\nMenu:")
         print("1. Tampilkan Jadwal")
@@ -227,7 +326,8 @@ def main():
         print("3. Hapus Jadwal")
         print("4. Edit Jadwal")
         print("5. Urutkan Berdasarkan Prioritas")
-        print("6. Keluar")
+        print("6. Search")
+        print("7. Keluar")
 
         pilihan = input("Masukkan pilihan (1/2/3/4/5/6): ")
 
@@ -246,12 +346,6 @@ def main():
             nomor_baris = int(
                 input("Masukkan nomor baris yang akan dihapus: "))
             hapus_jadwal(nomor_baris)
-            while True:
-                a = input(
-                    "Jadwal berhasil dihapus, klik enter untuk kembali ke menu aplikasi")
-                if a.isprintable():
-                    os.system("cls")
-                    main()
 
         elif pilihan == "4":
             tampilkan_jadwal()
@@ -262,6 +356,9 @@ def main():
             task_priority()
 
         elif pilihan == "6":
+            searching()
+
+        elif pilihan == "7":
             os.system("cls")
             break
 
