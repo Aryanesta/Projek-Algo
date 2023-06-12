@@ -1,0 +1,28 @@
+import time
+from datetime import datetime
+
+tanggal_sekarang = datetime.now().strftime("%d/%m/%Y")
+waktu_sekarang_nosekon = datetime.now().replace(microsecond=0).strftime("%H:%M")
+print(
+    f"Tanggal saat ini adalah {tanggal_sekarang} pukul {waktu_sekarang_nosekon}")
+
+tanggal_input = datetime.strptime(
+    input("Tanggal deadline (DD/MM/YYYY): "), "%d/%m/%Y")
+waktu_input = input("Waktu deadline (HH:MM): ")
+
+deadline_task = datetime.strptime(
+    f"{tanggal_input.date()} {waktu_input}", "%Y-%m-%d %H:%M")
+
+selisih = deadline_task - datetime.combine(datetime.strptime(
+    tanggal_sekarang, "%d/%m/%Y"), datetime.strptime(waktu_sekarang_nosekon, "%H:%M").time())
+durasi = int(selisih.total_seconds())
+
+for x in range(durasi, 0, -1):
+    detik = x % 60
+    menit = (x // 60) % 60
+    jam = (x // 3600) % 24
+    hari = x // (3600 * 24)
+    print(f"{hari} hari : {jam:02} jam : {menit:02} menit : {detik:02} detik")
+    time.sleep(1)
+
+print("Waktu habis!")
